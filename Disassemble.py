@@ -3,7 +3,6 @@ import codecs
 import re
 import sys
 import subprocess
-from binascii import unhexlify
 from __main__ import currentProgram
 from ghidra.app.cmd.data import CreateDataCmd
 from ghidra.program.database import ProgramAddressFactory
