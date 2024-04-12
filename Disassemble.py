@@ -56,10 +56,12 @@ disassembled = None
 disassembledData = None
 disassembledBss = None
 deps = [
-    [currentProgram, None]
+    [ currentProgram, None ]
 ]
+symbolName = [ "main" ]
 
 def ResolveExternalFunction(fCode):
+    global symbolName
     global program
     global rng
     global api
@@ -138,7 +140,10 @@ def ResolveExternalFunction(fCode):
 
     deps.append(dep)
 
+    symbolName.append( str(sym) )
+
 def MemFix():
+    global symbolName
     global program
     global rng
     global api
@@ -171,6 +176,7 @@ def MemFix():
         api.end(True)
 
 def Disassemble():
+    global symbolName
     global program
     global rng
     global api
@@ -196,6 +202,8 @@ def Disassemble():
     global disassembledData
     global disassembledBss
     global deps
+
+    api.analyzeAll(program)
 
     disassembled += "bits64\n"
     disassembled += "\nglobal main\n"
@@ -420,8 +428,13 @@ def Disassemble():
     for shortLabel in shortLabels:
         extFunctionCode = shortLabel[4:]
         ResolveExternalFunction(extFunctionCode)
+        disassembled += "\n; External Code..."
+        depPath = deps[:1][0].getExecutablePath().lstrip("/")
+        depName = os.path.splitext(os.path.basename(depPath))[0]
+        disassembled += "\n" + shortLabel + ":\n%include '" + depName + "_" + symbolName[:1] + "'\n"
 
 def Prepare():
+    global symbolName
     global program
     global rng
     global api
@@ -502,6 +515,7 @@ def Prepare():
     listingObj = program.getListing()
 
 def Export():
+    global symbolName
     global program
     global rng
     global api
@@ -529,13 +543,14 @@ def Export():
     global deps
 
     assemblyContent = disassembled + disassembledData + disassembledBss
-    lowOut = os.path.join(outFolder,name+".asm")
+    lowOut = os.path.join( outFolder, name + "_" + symbolName[0] + ".asm" )
     print("Output: " + os.path.normpath(lowOut))
     low = codecs.open(lowOut, "w","utf-8")
     low.write(assemblyContent)
     low.close()
 
 def main():
+    global symbolName
     global program
     global rng
     global api
@@ -567,7 +582,10 @@ def main():
         MemFix()
         Disassemble()
         Export()
+
         del deps[0]
+        del symbolName[0]
+
     return 0
 
 if __name__ == "__main__":
