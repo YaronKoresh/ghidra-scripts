@@ -13,6 +13,7 @@ from ghidra.program.model.lang import LanguageID
 from ghidra.program.util import DefaultLanguageService, ProgramLocation
 from ghidra.app.util import SymbolPath
 from ghidra.app.util import NamespaceUtils
+from ghidra.program.database.external.ExternalLocationDB import ExternalLocation
 from java.io import File
 
 scriptFolder = os.path.abspath(os.path.dirname(__file__))
@@ -86,18 +87,27 @@ def ResolveExternalFunction(fCode):
     global disassembledBss
     global deps
 
-    externalLocation = 0
+    externalLocation = None
 
     print("Searching: " + fCode)
-    for f in program.getFunctionManager().getExternalFunctions():
-        code = str(f.getExternalLocation().getAddress())
-        while code.startswith('0'):
-            code = code[1:]
-        if code == fCode:
-            externalLocation = f.getExternalLocation()
-            break
 
-    if externalLocation == 0:
+    externalFuncs = program.getFunctionManager().getExternalFunctions()
+    externalAddress = externalFuncs[0].getExternalLocation().getAddress()
+
+    while externalAddress.isExternalAddress():
+        code = ""
+        bytes = iter(api.getBytes(externalAddress,8))
+        for byte in bytes:
+            code = hex(byte) + code
+        while code.startswith('00'):
+            code = code[2:]
+        print(fCode + " <=> " + code)
+        if code == fCode:
+            externalLocation = program.getExternalManager().getExternalLocations(externalAddress)[0]
+            break
+        externalAddress = externalAddress.add(8)
+
+    if externalLocation == None:
         print("No external function found!")
         return None
     else:
@@ -113,12 +123,18 @@ def ResolveExternalFunction(fCode):
     symbols = NamespaceUtils.getSymbols(symbolPath, externalProgram)
 
     sym = None
-    for x in symbols:
-        if x.isExternalEntryPoint():
-            sym = x
+    for s in symbols:
+        if s.isExternalEntryPoint():
+            sym = s
             break
 
-    loc = ProgramLocation( externalProgram, sym.getAddress() )
+    if sym == None:
+        print("No external symbol found!")
+        return None
+    else:
+        print("External symbol: " + str(sym))
+
+    loc = ProgramLocation( program, sym.getAddress() )
     fns = externalProgram.getFunctionManager().getFunctions(True)
     fn = None
 
@@ -127,6 +143,12 @@ def ResolveExternalFunction(fCode):
         if loc == loc2:
             fn = f
             break
+
+    if sym == None:
+        print("External search: Failed")
+        return None
+    else:
+        print("External search: OK")
 
     retProg = externalProgram
     retAddr = fn.getBody()
@@ -169,9 +191,7 @@ def MemFix():
     global deps
 
     for block in memoryBlocks:
-        api.start()
         block.setWrite(False)
-        api.end(True)
 
 def Disassemble():
     global symbolName
@@ -201,7 +221,9 @@ def Disassemble():
     global disassembledBss
     global deps
 
+    api.start()
     api.analyzeAll(program)
+    api.end(True)
 
     disassembled += "bits64\n"
     disassembled += "\nglobal main\n"
