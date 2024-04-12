@@ -4,7 +4,6 @@ import re
 import sys
 import subprocess
 from __main__ import currentProgram
-from ghidra.app.cmd.data import CreateDataCmd
 from ghidra.program.database import ProgramAddressFactory
 from ghidra.program.model.address import AddressSet
 from ghidra.framework import ApplicationConfiguration
@@ -12,7 +11,6 @@ from ghidra.app.services import ProgramManager
 from docking.widgets.filechooser import GhidraFile
 from ghidra.program.model.lang import LanguageID
 from ghidra.program.util import DefaultLanguageService, ProgramLocation
-from ghidra.program.model.data import ByteDataType, WordDataType, DWordDataType, QWordDataType, LongDoubleDataType
 from ghidra.app.util import SymbolPath
 from ghidra.app.util import NamespaceUtils
 from java.io import File
@@ -429,9 +427,9 @@ def Disassemble():
         extFunctionCode = shortLabel[4:]
         ResolveExternalFunction(extFunctionCode)
         disassembled += "\n; External Code..."
-        depPath = deps[:1][0].getExecutablePath().lstrip("/")
+        depPath = deps[ len(deps)-1 ][0].getExecutablePath().lstrip("/")
         depName = os.path.splitext(os.path.basename(depPath))[0]
-        disassembled += "\n" + shortLabel + ":\n%include '" + depName + "_" + symbolName[:1] + "'\n"
+        disassembled += "\n" + shortLabel + ":\n%include '" + depName + "_" + symbolName[ len(symbolName)-1 ] + "'\n"
 
 def Prepare():
     global symbolName
