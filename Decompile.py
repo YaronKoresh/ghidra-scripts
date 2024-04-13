@@ -18,7 +18,7 @@ for func in iter:
     if decompileResults.decompileCompleted():
         decompiledFunction = decompileResults.getDecompiledFunction()
         decompiled += "\n" + decompiledFunction.getC()
-path = program.getExecutablePath().lstrip("/")
+path = currentProgram.getExecutablePath().lstrip("/")
 name = os.path.splitext(os.path.basename(path))[0]
 outPath = os.path.join(mainFolder,name+".c")
 out = codecs.open(outPath, "w","utf-8")
