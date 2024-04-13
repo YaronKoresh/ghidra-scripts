@@ -16,7 +16,7 @@ for func in iter:
     if decompileResults.decompileCompleted():
         decompiledFunction = decompileResults.getDecompiledFunction()
         decompiled += "\n" + decompiledFunction.getC()
-outPath = os.path.join(outFolder,name+".c")
+outPath = os.path.join(mainFolder,name+".c")
 out = codecs.open(outPath, "w","utf-8")
 out.write(decompiled)
 out.close()
