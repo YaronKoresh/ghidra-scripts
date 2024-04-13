@@ -91,7 +91,7 @@ def ResolveExternalFunction(fCode):
     print("Searching: " + fCode)
 
     externalFuncs = program.getFunctionManager().getExternalFunctions()
-    externalAddress = externalFuncs[0].getExternalLocation().getAddress()
+    externalAddress = externalFuncs.next().getExternalLocation().getAddress()
 
     while externalAddress.isExternalAddress():
         code = ""
