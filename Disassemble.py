@@ -13,7 +13,6 @@ from ghidra.program.model.lang import LanguageID
 from ghidra.program.util import DefaultLanguageService, ProgramLocation
 from ghidra.app.util import SymbolPath
 from ghidra.app.util import NamespaceUtils
-from ghidra.program.database.external.ExternalLocationDB import ExternalLocation
 from java.io import File
 
 scriptFolder = os.path.abspath(os.path.dirname(__file__))
