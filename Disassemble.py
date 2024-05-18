@@ -140,29 +140,31 @@ def ResolveExternalFunction(fCode):
     global disassembledBss
     global deps
 
+    adr = None
     funcs = list(filter(IsThunked,list(program.getFunctionManager().getFunctions(True))))
-   
-    externalLoc = externalFunc.getExternalLocation()
-    adr = externalLoc.getAddress()
-    _min = program.getMinAddress()
-    adr = adr.add( int(_min.toString(),16) )
+    for thnk in funcs:
+        externalLoc = thnk.getExternalLocation()
+        adr = externalLoc.getAddress()
+        _min = program.getMinAddress()
+        adr = adr.add( int(_min.toString(),16) )
 
-    fCode = fCode.zfill(16)
+        fCode = fCode.zfill(16)
 
-    while Address.min( program.getMaxAddress(), adr ) == adr:
-        code = ""
-        bytes = iter(api.getBytes(adr,8))
-        for di in bytes:
-            if int(di) < 0:
-                di = di & (2**bits-1)
-            di = hex(di).replace("0x","").replace("L","")
-            di = di[len(di)-2:]
-            code += di.zfill(2)
-        print(fCode + " <=> " + code)
+        while Address.min( program.getMaxAddress(), adr ) == adr:
+            code = ""
+            bytes = iter(api.getBytes(adr,8))
+            for di in bytes:
+                if int(di) < 0:
+                    di = di & (2**bits-1)
+                di = hex(di).replace("0x","").replace("L","")
+                di = di[len(di)-2:]
+                code += di.zfill(2)
+            print(fCode + " <=> " + code)
+            if code == fCode:
+                break
+            adr = adr.add(8)
         if code == fCode:
-            break
-        adr = adr.add(8)
-
+             break
     tkd = GetThunkedFunction(adr)
 
     retProg = tkd.getProgram()
@@ -174,7 +176,6 @@ def ResolveExternalFunction(fCode):
     ]
 
     deps.append(dep)
-
     symbolName.append( str(sym) )
 
 def MemFix():
