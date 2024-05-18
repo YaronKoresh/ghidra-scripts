@@ -13,6 +13,7 @@ from ghidra.program.model.lang import LanguageID
 from ghidra.program.util import DefaultLanguageService, ProgramLocation
 from ghidra.app.util import SymbolPath
 from ghidra.app.util import NamespaceUtils
+from ghidra.program.model.address import Address
 from java.io import File
 
 scriptFolder = os.path.abspath(os.path.dirname(__file__))
@@ -44,7 +45,7 @@ arch = None
 bits = None
 endian = None
 Addressor = None
-programContext = None
+programContext = None 
 memoryBlocks = None
 memory = None
 memoryStart = None
@@ -57,6 +58,59 @@ deps = [
     [ currentProgram, None ]
 ]
 symbolName = [ "main" ]
+
+def IsThunked(fn):
+    if str(fn.getName())[0:5] == "thunk":
+        return True
+    return False
+
+def GetThunkedFunction(addr):
+    global symbolName
+    global program
+    global rng
+    global api
+    global path
+    global fileSize
+    global name
+    global proc
+    global file
+    global entryPoint
+    global lang
+    global compilerSpec
+    global arch
+    global bits
+    global endian
+    global Addressor
+    global programContext
+    global memoryBlocks
+    global memory
+    global memoryStart
+    global memoryView
+    global listingObj
+    global disassembled
+    global disassembledData
+    global disassembledBss
+    global deps
+
+    externalLocation = getFunctionAt(addr).getThunkedFunction(True).getExternalLocation()
+    externalSymbol = externalLocation.getSymbol()
+    libPath = program.getExternalManager().getExternalLibrary(externalLocation.getLibraryName()).getAssociatedProgramPath()
+
+    projectData = state.getProject().getProjectData()
+    libFile = projectData.getFile(libPath)
+    externalProgram = libFile.getImmutableDomainObject(libFile, DomainFile.DEFAULT_VERSION, monitor)
+    label = externalLocation.getLabel()
+    symbolPath = SymbolPath(label)
+
+    sym = None
+    for x in NamespaceUtils.getSymbols(symbolPath, externalProgram):
+        if x.isExternalEntryPoint():
+            sym = x
+
+    loc = sym.getProgramLocation()
+    fn = externalProgram.getFunctionManager().getFunctionAt(loc.getAddress())
+
+    return fn
 
 def ResolveExternalFunction(fCode):
     global symbolName
@@ -86,71 +140,33 @@ def ResolveExternalFunction(fCode):
     global disassembledBss
     global deps
 
-    externalLocation = None
+    funcs = list(filter(IsThunked,list(program.getFunctionManager().getFunctions(True))))
+   
+    externalLoc = externalFunc.getExternalLocation()
+    adr = externalLoc.getAddress()
+    _min = program.getMinAddress()
+    adr = adr.add( int(_min.toString(),16) )
 
-    print("Searching: " + fCode)
+    fCode = fCode.zfill(16)
 
-    externalFuncs = program.getFunctionManager().getExternalFunctions()
-    externalAddress = externalFuncs.next().getExternalLocation().getAddress()
-
-    while externalAddress.isExternalAddress():
+    while Address.min( program.getMaxAddress(), adr ) == adr:
         code = ""
-        bytes = iter(api.getBytes(externalAddress,8))
-        for byte in bytes:
-            code = hex(byte) + code
-        while code.startswith('00'):
-            code = code[2:]
+        bytes = iter(api.getBytes(adr,8))
+        for di in bytes:
+            if int(di) < 0:
+                di = di & (2**bits-1)
+            di = hex(di).replace("0x","").replace("L","")
+            di = di[len(di)-2:]
+            code += di.zfill(2)
         print(fCode + " <=> " + code)
         if code == fCode:
-            externalLocation = program.getExternalManager().getExternalLocations(externalAddress)[0]
             break
-        externalAddress = externalAddress.add(8)
+        adr = adr.add(8)
 
-    if externalLocation == None:
-        print("No external function found!")
-        return None
-    else:
-        print("External function: " + str(externalLocation))
+    tkd = GetThunkedFunction(adr)
 
-    externalSymbol = externalLocation.getSymbol()
-    libPath = program.getExternalManager().getExternalLibrary(externalLocation.getLibraryName()).getAssociatedProgramPath()
-    projectData = state.getProject().getProjectData()
-    libFile = projectData.getFile(libPath)
-    externalProgram = libFile.getImmutableDomainObject(libFile, ghidra.framework.model.DomainFile.DEFAULT_VERSION, monitor)
-    label = externalLocation.getLabel()
-    symbolPath = SymbolPath(label)
-    symbols = NamespaceUtils.getSymbols(symbolPath, externalProgram)
-
-    sym = None
-    for s in symbols:
-        if s.isExternalEntryPoint():
-            sym = s
-            break
-
-    if sym == None:
-        print("No external symbol found!")
-        return None
-    else:
-        print("External symbol: " + str(sym))
-
-    loc = ProgramLocation( program, sym.getAddress() )
-    fns = externalProgram.getFunctionManager().getFunctions(True)
-    fn = None
-
-    for f in fns:
-        loc2 = ProgramLocation( externalProgram, f.getEntryPoint() )
-        if loc == loc2:
-            fn = f
-            break
-
-    if sym == None:
-        print("External search: Failed")
-        return None
-    else:
-        print("External search: OK")
-
-    retProg = externalProgram
-    retAddr = fn.getBody()
+    retProg = tkd.getProgram()
+    retAddr = tkd.getBody()
 
     dep = [
         retProg,
