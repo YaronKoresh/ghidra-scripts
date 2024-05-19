@@ -31,5 +31,5 @@
 # Finally, using the new reversing toolset:
 1. Import your software, with all its local/system direct/indirect dependencies (can be done automatically, during import, using "options" button).
 2. Inside "scripts" window, double click on the name of the needed python script.
-3. Go into the root folder, to see the recersed results.
+3. Go into the root folder, to see the results.
 4. Use any batch script to manipulate the results, according to your needs.
