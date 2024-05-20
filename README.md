@@ -9,7 +9,7 @@
 * Put a "retdec" directory, inside Ghidra root folder, and fill it with a copy of [RetDec decompiler](https://github.com/avast/retdec/releases/latest).
 * Extract [UPX Packer](https://github.com/upx/upx/releases/latest) & put the main executable inside retdec/bin folder.
 
-# Redare2 installation:
+# Radare2 installation:
 * Put a "radare2" directory, inside Ghidra root folder, and fill it with a copy of [Radare2 software](https://github.com/radareorg/radare2/releases/latest).
 
 # Nasm installation:
