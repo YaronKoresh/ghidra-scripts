@@ -1,3 +1,6 @@
+
+# This repository has been archived. Please check out [the new active repository](https://github.com/YaronKoresh/Reverse-Engineering-Tools)
+
 # Ghidra installation:
 * Install [Visual C++](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist#latest-microsoft-visual-c-redistributable-version).
 * Install [Python](https://python.org/downloads).
